@@ -1,0 +1,20 @@
+{
+    "name": "Sudoku",
+    "rootNamespace": "",
+    "references": [
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:3acb442840a380046bf452aeb90f8c1d",
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+        "GUID:d24cd23c5ec8499429694033072ddd6c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
