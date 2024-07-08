@@ -36,6 +36,13 @@ namespace Sudoku
         protected override void Reinitialize(int id, ReviewListener listener)
         {
             listener.Id = id;
+
+            listener.gameObject.SetActive(true);
+        }
+
+        protected override void OnDespawned(ReviewListener listener)
+        {
+            listener.gameObject.SetActive(false);
         }
     }
 }
