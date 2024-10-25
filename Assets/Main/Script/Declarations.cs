@@ -6,7 +6,12 @@ public static class Declarations
 {
     #region Const Field
 
-    public const string Sudoku = "Sudoku";
+    public const string Sudoku  = "Sudoku";
+    public const string Grid    = "Grid";
+    public const string Info    = "Info";
+    public const string Input   = "Input";
+    public const string Setting = "Setting";
+    public const string Message = "Message";
 
     #endregion
 

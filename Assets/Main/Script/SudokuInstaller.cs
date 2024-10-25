@@ -1,4 +1,5 @@
 using Loyufei.DomainEvents;
+using Loyufei.ViewManagement;
 using UnityEngine;
 using Zenject;
 
@@ -24,6 +25,10 @@ namespace Sudoku
                 .AsSingle();
 
             Container
+                .Bind<PlayerMetrix>()
+                .AsSingle();
+
+            Container
                 .Bind<ColorEffect>()
                 .FromInstance(_ColorEffect)
                 .AsSingle();
@@ -31,7 +36,7 @@ namespace Sudoku
             #region Factory
 
             Container
-                .BindMemoryPool<AreaView, AreaPool>()
+                .BindMemoryPool<Area, AreaPool>()
                 .FromComponentInNewPrefab(_Area)
                 .AsCached();
 
@@ -55,11 +60,15 @@ namespace Sudoku
             #region Model
 
             Container
-                .Bind<SudokuConstructModel>()
+                .Bind<ViewManager>()
                 .AsSingle();
 
             Container
-                .Bind<SudokuQueryModel>()
+                .Bind<SudokuModel>()
+                .AsSingle();
+
+            Container
+                .Bind<Buffer>()
                 .AsSingle();
 
             #endregion
@@ -67,37 +76,32 @@ namespace Sudoku
             #region Presenter
 
             Container
-                .BindInterfacesAndSelfTo<SceneProgress>()
+                .Bind<GridViewPresenter>()
                 .AsSingle()
                 .NonLazy();
 
             Container
-                .Bind<SudokuViewPresenter>()
+                .Bind<SetupViewPresenter>()
                 .AsSingle()
                 .NonLazy();
 
             Container
-                .Bind<SettingViewPresenter>()
-                .AsSingle()
-                .NonLazy();
-
-            Container
-               .Bind<MaskViewPresenter>()
+               .Bind<InputViewPresenter>()
                .AsSingle()
                .NonLazy();
 
             Container
-               .Bind<MessageViewPresenter>()
+               .Bind<ConfirmViewPresenter>()
                .AsSingle()
                .NonLazy();
 
             Container
-               .Bind<SudokuConstructPresenter>()
+               .Bind<InfoViewPresenter>()
                .AsSingle()
                .NonLazy();
 
             Container
-               .Bind<SudokuQueryPresenter>()
+               .Bind<SudokuModelPresenter>()
                .AsSingle()
                .NonLazy();
 
@@ -106,19 +110,8 @@ namespace Sudoku
             #region Event
 
             Container
-                .DeclareSignal<IDomainEvent>()
-                .WithId(Declarations.Sudoku);
-
-            Container
                 .Bind<IDomainEventBus>()
                 .To<DomainEventBus>()
-                .AsCached()
-                .WithArguments(Declarations.Sudoku);
-
-            SignalBusInstaller.Install(Container);
-
-            Container
-                .Bind<DomainEventService>()
                 .AsSingle();
 
             #endregion

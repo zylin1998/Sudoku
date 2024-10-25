@@ -1,0 +1,211 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Loyufei
+{
+    [SerializeField]
+    public enum EInputKey
+    {
+        None              = KeyCode.None,
+
+        #region Function
+
+        F1                = KeyCode.F1,
+        F2                = KeyCode.F2,
+        F3                = KeyCode.F3,
+        F4                = KeyCode.F4,
+        F5                = KeyCode.F5,
+        F6                = KeyCode.F6,
+        F7                = KeyCode.F7,
+        F8                = KeyCode.F8,
+        F9                = KeyCode.F9,
+        F10               = KeyCode.F10,
+        F11               = KeyCode.F11,
+        F12               = KeyCode.F12,
+        F13               = KeyCode.F13,
+        F14               = KeyCode.F14,
+        F15               = KeyCode.F15,
+        Escape            = KeyCode.Escape,
+        Help              = KeyCode.Help,
+
+        #endregion
+
+        #region Keypad
+
+        Keypad0           = KeyCode.Keypad0,
+        Keypad1           = KeyCode.Keypad1,
+        Keypad2           = KeyCode.Keypad2,
+        Keypad3           = KeyCode.Keypad3,
+        Keypad4           = KeyCode.Keypad4,
+        Keypad5           = KeyCode.Keypad5,
+        Keypad6           = KeyCode.Keypad6,
+        Keypad7           = KeyCode.Keypad7,
+        Keypad8           = KeyCode.Keypad8,
+        Keypad9           = KeyCode.Keypad9,
+        KeypadEnter       = KeyCode.KeypadEnter,
+        KeypadPeriod      = KeyCode.KeypadPeriod,
+        KeypadDivide      = KeyCode.KeypadDivide,
+        KeypadMultiply    = KeyCode.KeypadMultiply,
+        KeypadMinus       = KeyCode.KeypadMinus,
+        KeypadPlus        = KeyCode.KeypadPlus,
+        KeypadEquals      = KeyCode.KeypadEquals,
+        NumLock           = KeyCode.Numlock,
+
+        #endregion
+
+        #region Alpha Keyboard
+
+        A                 = KeyCode.A,
+        B                 = KeyCode.B,
+        C                 = KeyCode.C,
+        D                 = KeyCode.D,
+        E                 = KeyCode.E,
+        F                 = KeyCode.F,
+        G                 = KeyCode.G,
+        H                 = KeyCode.H,
+        I                 = KeyCode.I,
+        J                 = KeyCode.J,
+        K                 = KeyCode.K,
+        L                 = KeyCode.L,
+        M                 = KeyCode.M,
+        N                 = KeyCode.N,
+        O                 = KeyCode.O,
+        P                 = KeyCode.P,
+        Q                 = KeyCode.Q,
+        R                 = KeyCode.R,
+        S                 = KeyCode.S,
+        T                 = KeyCode.T,
+        U                 = KeyCode.U,
+        V                 = KeyCode.V,
+        W                 = KeyCode.W,
+        X                 = KeyCode.X,
+        Y                 = KeyCode.Y,
+        Z                 = KeyCode.Z,
+        Alpha0            = KeyCode.Alpha0,
+        Alpha1            = KeyCode.Alpha1,
+        Alpha2            = KeyCode.Alpha2,
+        Alpha3            = KeyCode.Alpha3,
+        Alpha4            = KeyCode.Alpha4,
+        Alpha5            = KeyCode.Alpha5,
+        Alpha6            = KeyCode.Alpha6,
+        Alpha7            = KeyCode.Alpha7,
+        Alpha8            = KeyCode.Alpha8,
+        Alpha9            = KeyCode.Alpha9,
+        LeftCtrl          = KeyCode.LeftControl,
+        RightCtrl         = KeyCode.RightControl,
+        LeftShift         = KeyCode.LeftShift,
+        RightShift        = KeyCode.RightShift,
+        LeftAlt           = KeyCode.LeftAlt,
+        RightAlt          = KeyCode.RightAlt,
+        Return            = KeyCode.Return,
+        Tab               = KeyCode.Tab,
+        CapsLock          = KeyCode.CapsLock,
+        Backspace         = KeyCode.Backspace,
+        Space             = KeyCode.Space,
+        Exclaim           = KeyCode.Exclaim,
+        DoubleQuote       = KeyCode.DoubleQuote,
+        Hash              = KeyCode.Hash,
+        Dollar            = KeyCode.Dollar,
+        Ampersand         = KeyCode.Ampersand,
+        Quote             = KeyCode.Quote,
+        LeftParen         = KeyCode.LeftParen,
+        RightParen        = KeyCode.RightParen,
+        Asterisk          = KeyCode.Asterisk,
+        Plus              = KeyCode.Plus,
+        Comma             = KeyCode.Comma,
+        Minus             = KeyCode.Minus,
+        Period            = KeyCode.Period,
+        Slash             = KeyCode.Slash,
+        Colon             = KeyCode.Colon,
+        Less              = KeyCode.Less,
+        Greater           = KeyCode.Greater,
+        Equals            = KeyCode.Equals,
+        Question          = KeyCode.Question,
+        At                = KeyCode.At,
+        Backslash         = KeyCode.Backslash,
+        Caret             = KeyCode.Caret,
+        Underscore        = KeyCode.Underscore,
+        BackQuote         = KeyCode.BackQuote,
+        LeftBracket       = KeyCode.LeftBracket,
+        RightBracket      = KeyCode.RightBracket,
+        LeftApple         = KeyCode.LeftApple,
+        RightApple        = KeyCode.RightApple,
+        LeftWindows       = KeyCode.LeftWindows,
+        RightWindows      = KeyCode.RightWindows,
+        AltGr             = KeyCode.AltGr,
+        Percent           = KeyCode.Percent,
+        Semicolon         = KeyCode.Semicolon,
+        LeftCurlyBracket  = KeyCode.LeftCurlyBracket,
+        RightCurlyBracket = KeyCode.RightCurlyBracket,
+        Pipe              = KeyCode.Pipe,
+        Tilde             = KeyCode.Tilde,
+        LeftMeta          = KeyCode.LeftMeta,
+        RightMeta         = KeyCode.RightMeta,
+        
+        #endregion
+
+        #region Middle Keyboard
+
+        UpArrow           = KeyCode.UpArrow,
+        DownArrow         = KeyCode.DownArrow,
+        LeftArrow         = KeyCode.LeftArrow,
+        RightArrow        = KeyCode.RightArrow,
+        Insert            = KeyCode.Insert,
+        Delete            = KeyCode.Delete,
+        Home              = KeyCode.Home,
+        End               = KeyCode.End,
+        PageUp            = KeyCode.PageUp,
+        PageDown          = KeyCode.PageDown,
+        Print             = KeyCode.Print,
+        ScrollLock        = KeyCode.ScrollLock,
+        Pause             = KeyCode.Pause,
+        SysReq            = KeyCode.SysReq,
+        Break             = KeyCode.Break,
+        Menu              = KeyCode.Menu,
+        Clear             = KeyCode.Clear,
+
+        #endregion
+
+        #region Mouse
+
+        Mouse0 = KeyCode.Mouse0,
+        Mouse1            = KeyCode.Mouse1,
+        Mouse2            = KeyCode.Mouse2,
+        Mouse3            = KeyCode.Mouse3,
+        Mouse4            = KeyCode.Mouse4,
+        Mouse5            = KeyCode.Mouse5,
+        Mouse6            = KeyCode.Mouse6,
+
+        #endregion
+
+        #region JoyStick(Game Controller)
+
+        JoystickX         = 600,
+        JoystickA         = 601,
+        JoystickB         = 602,
+        JoystickY         = 603,
+        LB                = 604,
+        RB                = 605,
+        LT                = 606,
+        RT                = 607,
+        Back              = 608,
+        Start             = 609,
+        LS_B              = 610,
+        RS_B              = 611,
+        LSUp              = 612,
+        LSDown            = 613,
+        LSLeft            = 614,
+        LSRight           = 615,
+        RSUp              = 616,
+        RSDown            = 617,
+        RSLeft            = 618,
+        RSRight           = 619,
+        DPADUp            = 620,
+        DPADDown          = 621,
+        DPADLeft          = 622,
+        DPADRight         = 623,
+        
+        #endregion
+    }
+}

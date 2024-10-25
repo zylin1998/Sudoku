@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,65 +8,101 @@ namespace Loyufei.DomainEvents
 {
     public class DomainEventBus : IDomainEventBus
     {
-        [Inject]
-        public DomainEventBus(SignalBus signalBus, object group = null)
+        public DomainEventBus(DiContainer container) 
         {
-            SignalBus = signalBus;
-            Group     = group;
-            
-            SignalBus.SubscribeId<IDomainEvent>(Group, Post);
-            
-            _Mapping = new EventHandlerMapping();
+            SignalBusInstaller.Install(container);
         }
 
-        private EventHandlerMapping _Mapping;
+        protected static EmptyId NullId { get; } = new();
 
-        public object    Group     { get; }
+        [Inject]
         public SignalBus SignalBus { get; }
 
-        public Dictionary<Type, List<IEventHandler>> Mapping => _Mapping;
+        protected Dictionary<object, EventGroup> Mapping { get; } = new();
 
-        public void Register<TEvent>(IEventHandler<TEvent> eventHandler, bool priority = false)
+        public void Register<TEvent>(IEventHandler<TEvent> eventHandler, object groupId = default, bool priority = false)
             where TEvent : IDomainEvent
         {
-            var eventType   = typeof(TEvent);
+            var id = groupId.IsDefault() ? NullId : groupId;
 
-            var handlers = _Mapping.GetorAdd(eventType, () => new());
-
-            if (priority) { handlers.Insert(0, eventHandler); }
-
-            else { handlers.Add(eventHandler); }
+            var group = Mapping.GetorAdd(id, () => CreateGroup(id));
+            
+            group.Register(eventHandler, priority);
         }
 
-        public bool UnRegister<TEvent>(IEventHandler<TEvent> eventHandler)
+        public bool UnRegister<TEvent>(Action<TEvent> callBack, object groupId = default)
             where TEvent : IDomainEvent
         {
-            var eventType = typeof(TEvent);
-            var handlers  = _Mapping.GetorReturn(eventType, () => new());
+            var id = groupId.IsDefault() ? NullId : groupId;
 
-            return handlers.Remove(eventHandler);
+            var exist = Mapping.TryGetValue(id, out var group);
+
+            return exist ? group.UnRegister(callBack) > 0 : false;
         }
 
-        public void PostAll(IAggregateRoot trigger, object identifier = null)
+        public void PostAll(IAggregateRoot trigger, object groupId = null)
         {
+            var id = groupId.IsDefault() ? NullId : groupId;
+
             foreach (var e in trigger)
             {
-                SignalBus.TryFireId(identifier, e);
+                SignalBus.TryFireId(id, e);
             }
 
             trigger.ClearEvent();
         }
 
-        private void Post(IDomainEvent eventData)
+        protected EventGroup CreateGroup(object groupId) 
         {
-            var actions = _Mapping.GetorAdd(eventData.GetType(), () => new());
+            var group = new EventGroup(groupId);
+
+            SignalBus.DeclareSignal<IDomainEvent>(group.GroupId);
             
-            actions.ForEach(action => action.Invoke(eventData));
+            SignalBus.SubscribeId<IDomainEvent>(group.GroupId, group.Post);
+
+            return group;
         }
 
-        internal class EventHandlerMapping : Dictionary<Type, List<IEventHandler>> 
+        protected class EventGroup 
         {
+            public EventGroup(object groupId) 
+            {
+                GroupId = groupId;
+            }
 
+            public object GroupId { get; }
+
+            public Dictionary<Type, List<IEventHandler>> Handlers { get; } = new();
+            
+            public void Register<TEvent>(IEventHandler<TEvent> eventHandler, bool priority = false)
+                where TEvent : IDomainEvent
+            {
+                var eventType = typeof(TEvent);
+
+                var handlers = Handlers.GetorAdd(eventType, () => new());
+
+                if (priority) { handlers.Insert(0, eventHandler); }
+
+                else { handlers.Add(eventHandler); }
+            }
+
+            public int UnRegister<TEvent>(Action<TEvent> callBack)
+                where TEvent : IDomainEvent
+            {
+                var eventType = typeof(TEvent);
+                var exist     = Handlers.TryGetValue(eventType, out var handlers);
+                
+                return exist ? handlers.RemoveAll(h => ((IEventHandler<TEvent>)h).Equals(callBack)) : 0;
+            }
+
+            public void Post(IDomainEvent eventData)
+            {
+                var actions = Handlers.GetorAdd(eventData.GetType(), () => new());
+
+                actions.ForEach(action => action.Invoke(eventData));
+            }
         }
+
+        protected struct EmptyId { }
     }
 }

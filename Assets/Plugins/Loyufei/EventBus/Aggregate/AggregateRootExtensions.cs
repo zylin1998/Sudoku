@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Loyufei.DomainEvents
 {
@@ -10,16 +9,9 @@ namespace Loyufei.DomainEvents
     {
         public static void SettleEvents(this IAggregateRoot self, object identifier = null, params IDomainEvent[] domainEvents) 
         {
-            self.AddEvents(domainEvents);
-            
-            self.DomainEventService.Post(self, identifier);
-        }
+            self.AddEvent(domainEvents);
 
-        public static void SettleEvents(this IAggregateRoot self, IEnumerable<IDomainEvent> domainEvents, object identifier = null)
-        {
-            self.AddEvents(domainEvents);
-
-            self.DomainEventService.Post(self, identifier);
+            self.EventBus.PostAll(self, identifier);
         }
     }
 }

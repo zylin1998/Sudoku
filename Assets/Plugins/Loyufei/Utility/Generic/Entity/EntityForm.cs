@@ -10,10 +10,12 @@ namespace Loyufei
     {
         public EntityForm(IEnumerable<TEntity> entities) 
         {
+            if (entities.IsDefault()) { return; }
+
             Dictionary = entities.ToDictionary(e => e.Identity);
         }
 
-        public Dictionary<object, TEntity> Dictionary { get; }
+        public virtual Dictionary<object, TEntity> Dictionary { get; }
 
         public IEntity<TItem> this[object identity] 
             => Dictionary.TryGetValue(identity, out var entity) ? entity : default;

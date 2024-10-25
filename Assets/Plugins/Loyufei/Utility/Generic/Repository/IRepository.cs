@@ -55,6 +55,8 @@ namespace Loyufei
         public bool Limited { get; }
 
         public IEnumerable<IReposit> Create(int amount);
+
+        public void Release(int index);
     }
 
     public interface IFlexibleRepository<TData> : IFlexibleRepository, IRepository<TData>

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Loyufei
 {
-    public class FlexibleRepositoryBase<T> : FlexibleRepositoryBase<string, T, RepositBase<string, T>>
+    public class FlexibleRepositoryBase<TId, TData> : FlexibleRepositoryBase<TId, TData, RepositBase<TId, TData>>
     {
         public FlexibleRepositoryBase() : base()
         {
@@ -24,7 +24,7 @@ namespace Loyufei
             
         }
 
-        public FlexibleRepositoryBase(IEnumerable<RepositBase<string, T>> reposits, bool limited, int maxCapacity)
+        public FlexibleRepositoryBase(IEnumerable<RepositBase<TId, TData>> reposits, bool limited, int maxCapacity)
             : base(reposits, limited, maxCapacity)
         {
             
@@ -37,24 +37,25 @@ namespace Loyufei
     {
         public FlexibleRepositoryBase() : base()
         {
-
+            _Limited     = false;
+            _MaxCapacity = 0;
         }
 
-        public FlexibleRepositoryBase(int capacity) : base(capacity)
+        public FlexibleRepositoryBase(int capacity) : this(capacity, true,  capacity)
         {
 
         }
 
         public FlexibleRepositoryBase(int capacity, bool limited, int maxCapacity) : base(capacity)
         {
-            _Limited = limited;
+            _Limited     = limited;
             _MaxCapacity = maxCapacity;
         }
 
         public FlexibleRepositoryBase(IEnumerable<TReposit> reposits, bool limited, int maxCapacity) 
             : base(reposits)
         {
-            _Limited = limited;
+            _Limited     = limited;
             _MaxCapacity = maxCapacity;
         }
 
@@ -67,14 +68,24 @@ namespace Loyufei
         
         public IEnumerable<IReposit<TData>> Create(int amount)
         {
-            var limit = _MaxCapacity - Capacity;
-            var count = Limited ? Mathf.Clamp(amount, 0, limit) : amount;
-            var expand = new TReposit[count]
-                .Select(reposit => Activator.CreateInstance<TReposit>());
+            var limit  = _MaxCapacity - Capacity;
+            var count  = Limited ? Mathf.Clamp(amount, 0, limit) : amount;
+            
+            for(var i = 0; i < count; i++) 
+            {
+                var expand = Activator.CreateInstance<TReposit>();
 
-            _Reposits.AddRange(expand);
+                _Reposits.Add(expand);
 
-            return _Reposits.GetRange(count, count).OfType<IReposit<TData>>();
+                yield return expand;
+            }
+        }
+
+        public void Release(int index) 
+        {
+            if (index >= _Reposits.Count) { return; }
+
+            _Reposits.RemoveRange(index, _Reposits.Count - index);
         }
     }
 }

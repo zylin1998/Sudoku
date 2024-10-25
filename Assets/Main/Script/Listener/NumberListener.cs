@@ -3,22 +3,27 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UniRx;
 using TMPro;
-using DG.Tweening;
 using Zenject;
+using Loyufei;
+using Loyufei.ViewManagement;
 
 namespace Sudoku
 {
-    public class NumberListener : ListenerAdapter<Button>
+    public class NumberListener : ButtonListener
     {
         [SerializeField]
         private TextMeshProUGUI _InteractText;
         [SerializeField, Inject]
         private ColorEffect     _ColorEffect;
+        [SerializeField]
+        private Vector2Int _Offset;
 
         public int Context { get; private set; }
-        public int AreaId  { get; private set; }
         
+        public Offset2DInt Offset { get => new(_Offset.x, _Offset.y); set => _Offset = new(value.X, value.Y); }
+
         public ColorEffect     ColorEffect  => _ColorEffect;
         public TextMeshProUGUI InteractText => _InteractText;
 
@@ -26,31 +31,12 @@ namespace Sudoku
         {
             _InteractText.enabled = false;
 
-            Listener.interactable = false;
-
             Listener.image.color = ColorEffect.Normal;
-        }
-
-        public override void AddListener(Action<object> callBack)
-        {
-            Listener.onClick.AddListener(() => callBack.Invoke(Id));
         }
 
         public void SetContext(int context) 
         {
             Context = context; 
-        }
-
-        public void SetId(int id, int area, int size) 
-        {
-            var length = (int)Mathf.Pow(size, 2);
-            var x1 = id   % size;
-            var x2 = area % size * size;
-            var y1 = id   / size;
-            var y2 = area / size * size;
-            
-            Id     = x1 + x2 + length * (y1 + y2);
-            AreaId = area;
         }
     }
 
@@ -95,10 +81,11 @@ namespace Sudoku
             self.Listener.interactable = false;
 
             image
-                .DOColor(warning, 0.2f).OnComplete(() => image
-                .DOColor(normal , 0.2f).OnComplete(() => image
-                .DOColor(warning, 0.2f).OnComplete(() => image
-                .DOColor(normal , 0.2f).OnComplete(() => { if (clear) self.Clear(); }))));
+                .ChangeColor(warning, 0.2f)
+                .Subscribe((l) => image.ChangeColor(normal , 0.2f)
+                .Subscribe((l) => image.ChangeColor(warning, 0.2f)
+                .Subscribe((l) => image.ChangeColor(normal , 0.2f)
+                .Subscribe(l => { if (clear) self.Clear(); }))));
         }
 
         public static void Review(this NumberListener self, bool isOn)
@@ -110,11 +97,13 @@ namespace Sudoku
             
             listener.interactable = false;
 
-            image.DOColor(color, 0.5f).OnComplete(() => listener.interactable = true);
+            image
+                .ChangeColor(color, 0.2f)
+                .Subscribe(l => listener.interactable = true);
         }
     }
 
-    public class NumberPool : MemoryPool<int, int, int, NumberListener> 
+    public class NumberPool : MemoryPool<Offset2DInt, NumberListener> 
     {
         public NumberPool() : base() 
         {
@@ -123,18 +112,45 @@ namespace Sudoku
 
         public Transform DespawnRoot { get; }
 
-        protected override void Reinitialize(int id, int area, int size, NumberListener number)
+        public Action<IListenerAdapter> Binder { get; set; }
+
+        protected override void Reinitialize(Offset2DInt offset, NumberListener number)
         {
             number.gameObject.SetActive(false);
 
-            number.SetId(id, area, size);
+            number.Offset = offset;
+
+            number.Listener.interactable = false;
         }
 
         protected override void OnDespawned(NumberListener number)
         {
+            number.Clear();
+
             number.gameObject.SetActive(false);
             
             number.transform.SetParent(DespawnRoot);
+        }
+
+        protected override void OnCreated(NumberListener listener)
+        {
+            listener.AddListener(Binder);
+        }
+    }
+
+    public static class ImageExtension 
+    {
+        public static IObservable<long> ChangeColor(this Image self, Color color, float duration) 
+        {
+            var changing = Observable
+                .EveryUpdate()
+                .TakeWhile(l => self.color != color);
+
+            var passTime = 0f;
+
+            changing.Subscribe(l => self.color = Color.Lerp(self.color, color, (passTime += Time.deltaTime) * (1 / duration)));
+
+            return changing.Last();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Loyufei.DomainEvents
 {
@@ -9,7 +10,7 @@ namespace Loyufei.DomainEvents
         public void Invoke(IDomainEvent eventdata);
     }
 
-    public interface IEventHandler<TEvent> : IEventHandler where TEvent : IDomainEvent
+    public interface IEventHandler<TEvent> : IEventHandler, IEquatable<Action<TEvent>> where TEvent : IDomainEvent
     {
         public void Invoke(TEvent eventdata);
 
@@ -24,6 +25,11 @@ namespace Loyufei.DomainEvents
         }
         
         protected Action<TEvent> _CallBack { get; }
+
+        public bool Equals(Action<TEvent> other)
+        {
+            return Equals(_CallBack, other);
+        }
 
         public virtual void Invoke(TEvent eventData)
         {

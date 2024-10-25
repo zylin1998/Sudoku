@@ -1,9 +1,10 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Windows;
+using TMPro;
 using Zenject;
+using Loyufei.ViewManagement;
 
 namespace Sudoku
 {
@@ -15,6 +16,7 @@ namespace Sudoku
         public override int Id
         {
             get => base.Id;
+            
             set
             { 
                 base.Id = value;
@@ -33,6 +35,8 @@ namespace Sudoku
 
         public Transform DespawnRoot { get; }
 
+        public Action<IListenerAdapter> Binder { get; set; }
+
         protected override void Reinitialize(int id, InputListener input)
         {
             input.Id = id;
@@ -45,6 +49,11 @@ namespace Sudoku
             input.transform.SetParent(DespawnRoot);
 
             input.gameObject.SetActive(false);
+        }
+
+        protected override void OnCreated(InputListener input)
+        {
+            input.AddListener(Binder);
         }
     }
 }

@@ -7,21 +7,8 @@ using UnityEngine;
 
 namespace Loyufei
 {
-    public interface ISaveable
-    {
-
-    }
-
     [Serializable]
-    public enum EUnitySavePath
-    {
-        None = 0,
-        PersistanceDataPath = 1,
-        DataPath = 2,
-    }
-
-    [Serializable]
-    public abstract class SaveSystem
+    public abstract class SaveSystem<TSaveable> : ISaveSystem<TSaveable> where TSaveable : ISaveable
     {
         [SerializeField]
         protected EUnitySavePath _UnitySavePath;
@@ -55,35 +42,13 @@ namespace Loyufei
 
         public string FileName => _FileName + ".json";
 
-        public virtual ISaveable Saveable { get; protected set; }
-    }
+        public virtual TSaveable Saveable { get; protected set; }
 
-    public static class SaveSystemExtensions 
-    {
-        public static void Save(this SaveSystem self) 
+        public virtual TSaveable FetchData() 
         {
-            if (!Directory.Exists(self.SavePath)) 
-            {
-                Directory.CreateDirectory(self.SavePath); 
-            }
+            Saveable = this.Load<TSaveable>() ?? Activator.CreateInstance<TSaveable>();
 
-            var json = JsonUtility.ToJson(self.Saveable, true);
-            var path = Path.Combine(self.SavePath, self.FileName);
-
-            File.WriteAllText(path, json);
-        }
-
-        public static T Load<T>(this SaveSystem self) where T : ISaveable
-        {
-            var path  = Path.Combine(self.SavePath, self.FileName);
-            var exist = File.Exists(path);
-            
-            if(!exist) { return default; }
-
-            var json = File.ReadAllText(path); 
-            var data = JsonUtility.FromJson<T>(json);
-
-            return data;
+            return Saveable;
         }
     }
 }

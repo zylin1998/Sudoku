@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 using Zenject;
+using Loyufei.ViewManagement;
 
 namespace Sudoku
 {
-    public class ReviewListener : ListenerAdapter<Toggle>
+    public class ReviewListener : ToggleListener
     {
         [SerializeField]
         private TextMeshProUGUI _Label;
@@ -24,15 +24,19 @@ namespace Sudoku
                 _Label.SetText(Id.ToString());
             }
         }
-
-        public override void AddListener(Action<object> callBack)
-        {
-            Listener.onValueChanged.AddListener(isOn => callBack?.Invoke(isOn));
-        }
     }
 
     public class  ReviewPool : MemoryPool<int, ReviewListener> 
     {
+        public ReviewPool() : base() 
+        {
+            DespawnRoot = new GameObject("ReviewListener").transform;
+        }
+
+        public Action<IListenerAdapter> Binder { get; set; }
+
+        public Transform DespawnRoot { get; }
+
         protected override void Reinitialize(int id, ReviewListener listener)
         {
             listener.Id = id;
@@ -43,6 +47,13 @@ namespace Sudoku
         protected override void OnDespawned(ReviewListener listener)
         {
             listener.gameObject.SetActive(false);
+
+            listener.transform.SetParent(DespawnRoot);
+        }
+
+        protected override void OnCreated(ReviewListener listener)
+        {
+            listener.AddListener(Binder);
         }
     }
 }

@@ -3,44 +3,41 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Zenject;
 
 namespace Loyufei.DomainEvents
 {
-    public interface IAggregateRoot : IEnumerable<IDomainEvent> 
+    public interface IAggregateRoot : IEnumerable<IDomainEvent>
     {
-        public DomainEventService DomainEventService { get; }
+        public IDomainEventBus EventBus { get; }
 
-        public void AddEvent(IDomainEvent domainEvent);
-        public void AddEvents(IEnumerable<IDomainEvent> domainEvents);
+        public void AddEvent(IEnumerable<IDomainEvent> domainEvents);
+
+        public IEnumerable<IDomainEvent> GetEvents();
 
         public void ClearEvent();
     }
 
     public class AggregateRoot : IAggregateRoot
     {
-        public DomainEventService DomainEventService { get; }
+        public IDomainEventBus EventBus { get; private set; }
 
-        public AggregateRoot(DomainEventService service) 
+        protected List<IDomainEvent> Events { get; } = new();
+
+        [Inject]
+        protected virtual void Construct(IDomainEventBus eventBus) 
         {
-            DomainEventService = service;
-            Events             = new List<IDomainEvent>();
+            EventBus = eventBus;
         }
 
-        protected List<IDomainEvent> Events { get; } 
-
-        public void AddEvent (IDomainEvent domainEvent) 
+        public void AddEvent(IEnumerable<IDomainEvent> domainEvents)
         {
-            Events.Add(domainEvent); 
+            Events.AddRange(domainEvents);
         }
 
-        public void AddEvents(IEnumerable<IDomainEvent> domainEvents)
+        public IEnumerable<IDomainEvent> GetEvents() 
         {
-            foreach (IDomainEvent domainEvent in domainEvents)
-            {
-                if (domainEvents.IsDefault()) { continue; }
-
-                AddEvent(domainEvent);
-            }
+            return Events;
         }
 
         public void ClearEvent() 
@@ -48,10 +45,14 @@ namespace Loyufei.DomainEvents
             Events.Clear(); 
         }
 
-        public IEnumerator<IDomainEvent> GetEnumerator() 
-            => Events.GetEnumerator();
+        public IEnumerator<IDomainEvent> GetEnumerator()
+        {
+            return Events.GetEnumerator();
+        }
 
-        IEnumerator IEnumerable.GetEnumerator() 
-            => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 }

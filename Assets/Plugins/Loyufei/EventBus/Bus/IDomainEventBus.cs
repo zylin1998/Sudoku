@@ -6,15 +6,13 @@ namespace Loyufei.DomainEvents
 {
     public interface IDomainEventBus
     {
-        public object Group { get; }
-
-        public void Register<TEvent>(IEventHandler<TEvent> eventHandler, bool priority = false) 
+        public void Register<TEvent>(IEventHandler<TEvent> eventHandler, object groupId = default, bool priority = false) 
             where TEvent : IDomainEvent;
 
-        public bool UnRegister<TEvent>(IEventHandler<TEvent> eventHandler)
+        public bool UnRegister<TEvent>(Action<TEvent> callBack, object groupId = default)
             where TEvent : IDomainEvent;
 
-        public void PostAll(IAggregateRoot trigger, object Identifier = null);
+        public void PostAll(IAggregateRoot events, object groupId = null);
     }
 
     public static class DomainEventBusExtensions 
@@ -22,10 +20,11 @@ namespace Loyufei.DomainEvents
         public static void Register<TEvent>(
             this IDomainEventBus self, 
                  Action<TEvent>  eventAction,
+                 object          groupId  = default,
                  bool            priority = false)
             where TEvent : IDomainEvent
         {
-            self.Register(new EventHandler<TEvent>(eventAction), priority);
+            self.Register(new EventHandler<TEvent>(eventAction), groupId, priority);
         }
     }
 }
