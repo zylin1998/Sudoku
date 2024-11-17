@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using Loyufei;
+using Zenject;
 
 namespace Sudoku
 {
@@ -17,14 +18,15 @@ namespace Sudoku
 
         }
 
-        public int Size { get; private set; }
+        [Inject]
+        public SudokuSetting Setting { get; }
 
         public IReposit<int> this[int x, int y]
-            => IsClamp(x, y) ? SearchAt(x + y * Size.Pow(2)) : default;
+            => IsClamp(x, y) ? SearchAt(x + y * Setting.Length) : default;
 
         private bool IsClamp(int x, int y)
         {
-            var length = Size.Pow(2);
+            var length = Setting.Length - 1;
 
             return x.IsClamp(0, length) && y.IsClamp(0, length);
         }
@@ -39,10 +41,8 @@ namespace Sudoku
             }
         }
 
-        public void Set(int size) 
+        public void Set() 
         {
-            Size = size;
-
             _Reposits.ForEach(r => r.Preserve(0));
         }
 
@@ -51,81 +51,53 @@ namespace Sudoku
             this[offset.X, offset.Y].Preserve(number);
         }
 
-        public IEnumerable<Offset2DInt> CheckHorizontal(Offset2DInt offset) 
+        public (Offset2DInt offset, int number) Get(int index)
         {
-            for (var index =  0; index < Size.Pow(2); index++) 
+            var offset = GetOffset(index);
+
+            if (IsClamp(offset.X, offset.Y))
             {
-                var target = new Offset2DInt(index, offset.Y);
+                return (GetOffset(index), _Reposits[index].Data);
+            }
 
-                if (target == offset) { continue; }
+            return (new(int.MinValue, int.MinValue), int.MinValue);
+        }
 
-                if (this[target.X, target.Y].Data == this[offset.X, offset.Y].Data) 
-                {
-                    yield return target;
-                }
+        public IEnumerable<(Offset2DInt offset, int number)> GetAll()
+        {
+            for (int index = 0; index < Setting.Capacity; index++)
+            {
+                yield return Get(index);
             }
         }
 
-        public IEnumerable<Offset2DInt> CheckVertical(Offset2DInt offset)
+        public IEnumerable<Offset2DInt> CheckSame(Offset2DInt center) 
         {
-            for (var index = 0; index < Size.Pow(2); index++)
+            if (!IsClamp(center.X, center.Y)) { yield break; }
+
+            var value = this[center.X, center.Y].Data;
+
+            for (var index = 0; index < Setting.Capacity; index++) 
             {
-                var target = new Offset2DInt(offset.X, index);
+                var offset = GetOffset(index);
 
-                if (target == offset) { continue; }
+                if (Equals(center, offset) || !IsClamp(offset.X, offset.Y)) { continue; }
 
-                if (this[target.X, target.Y].Data == this[offset.X, offset.Y].Data)
-                {
-                    yield return target;
-                }
+                if (this[offset.X, offset.Y].Data != value) { continue; }
+
+                if (offset.X == center.X)     { yield return offset; }
+                if (offset.Y == center.Y)     { yield return offset; }
+                if (SameArea(center, offset)) { yield return offset; }
             }
         }
 
-        public IEnumerable<Offset2DInt> CheckArea(Offset2DInt offset, bool ignoreHoriandVert = true) 
+        public bool SameArea(Offset2DInt offset1, Offset2DInt offset2) 
         {
-            var area  = new Offset2DInt(offset.X / Size, offset.Y / Size);
-            var start = new Offset2DInt(area.X * Size, area.Y * Size);
-            var end   = new Offset2DInt(area.X * Size + Size, area.Y * Size + Size);
+            var size  = Setting.Size;
+            var area1 = new Offset2DInt(offset1.X / size, offset1.Y / size);
+            var area2 = new Offset2DInt(offset2.X / size, offset2.Y / size);
 
-            for (var x = start.X; x < end.X; x++) 
-            {
-                for (var y = start.Y; y < end.Y; y++)
-                {
-                    var target = new Offset2DInt(x, y);
-
-                    if (target == offset) { continue; }
-
-                    if (ignoreHoriandVert && (x == offset.X || y == offset.Y)) { continue; }
-
-                    if (this[target.X, target.Y].Data == this[offset.X, offset.Y].Data)
-                    {
-                        yield return target;
-                    }
-                }
-            }
-        }
-
-        public IEnumerable<Offset2DInt> GetOffsetsByNumber(int number)
-        {
-            var (x, y) = (0, 0);
-
-            for (var index = 0; index < Size.Pow(4); index++) 
-            {
-                var reposit = this[x, y];
-
-                if (reposit.Data == number) yield return new(x, y);
-
-                (x, y) = x < Size.Pow(2) - 1 ? (++x, y) : (0, ++y);
-            }
-        }
-
-        public Offset2DInt GetRandom() 
-        {
-            var array  = _Reposits.GetRange(0, Size.Pow(4)).FindAll(r => r.Data == 0);
-            var random = Declarations.GetRandom(0, array.Count - 1);
-            var index  = _Reposits.IndexOf(array[random]);
-            
-            return GetOffset(index, Size.Pow(2));
+            return Equals(area1, area2);
         }
 
         public void Clear(Offset2DInt offset) 
@@ -133,9 +105,9 @@ namespace Sudoku
             this[offset.X, offset.Y]?.Preserve(0);
         }
 
-        private Offset2DInt GetOffset(int number, int size) 
+        private Offset2DInt GetOffset(int number) 
         {
-            return new(number % size, number / size);
+            return new(number % Setting.Length, number / Setting.Length);
         }
     }
 }

@@ -14,16 +14,18 @@ namespace Sudoku
 
         [Inject]
         public Buffer Buffer { get; }
+        [Inject]
+        public SudokuSetting Setting { get; }
 
         protected override void RegisterEvents()
         {
-            Register<ReviewNumber>    (Review);
-            Register<FoundSame>       (Warning);
-            Register<DisplayNumbers>  (Display);
-            Register<ResponseTip>     (Display);
-            Register<ResponseQueryAll>(Display);
-            Register<SetNumber>       (Display, true);
-            Register<SudokuSetup>     (Setup  , true);
+            Register<SudokuSetup> (Setup);
+            Register<ReviewNumber>(Review);
+            Register<FoundSame>   (Warning);
+            Register<GameOver>    (GameOver);
+            Register<DisplayAll>  (Display);
+            Register<FillByOffset>(Display);
+            Register<SetNumber>   (Display, true);
         }
 
         protected override void Init() 
@@ -31,24 +33,24 @@ namespace Sudoku
             View.SetBinder(GetNumber);
         }
 
-        private void Display(DisplayNumbers display) 
+        private void Display(FillByOffset fill)
         {
-            View.Display(Buffer.GetDisplay());
+            foreach (var offset in fill.Offsets) 
+            {
+                View.Display(offset, Buffer.Get(offset), false);
+            }
+
+            Buffer.Verified();
         }
 
-        private void Display(ResponseTip tip)
+        private void Display(DisplayAll display)
         {
-            View.Display(Buffer.GetDisplay());
-        }
-
-        private void Display(ResponseQueryAll query) 
-        {
-            View.Display(Buffer.GetDisplay());
+            View.Display(Buffer.GetAll(true), false);
         }
 
         private void Display(SetNumber set) 
         {
-            View.Display(set.Offset, set.Number);
+            View.Display(set.Offset, set.Number, true);
         }
 
         private void Warning(FoundSame same) 
@@ -65,12 +67,21 @@ namespace Sudoku
         {
             View.RemoveLayout();
 
-            View.Layout(setup.Size);
+            var layout = View.Layout(Setting.Size);
+
+            View.Display(Buffer.GetAll(false), false);
+
+            Buffer.Verified();
         }
 
         private void GetNumber(IListenerAdapter adapter) 
         {
             SettleEvents(new GetNumber(adapter.To<NumberListener>().Offset));
+        }
+
+        private void GameOver(GameOver gameOver) 
+        {
+            View.Numbers.ForEach(n => n.Listener.interactable = false);
         }
     }
 }

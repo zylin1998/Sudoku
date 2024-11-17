@@ -2,6 +2,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using Loyufei;
+using Zenject;
 
 namespace Sudoku
 {
@@ -17,16 +18,15 @@ namespace Sudoku
 
         }
 
-        public int Size { get; private set; }
+        [Inject]
+        public SudokuSetting Setting { get; }
 
         public IReposit<int> this[int x, int y] 
-            => IsClamp(x, y) ? SearchAt(x + y * Size) : default;
+            => IsClamp(x, y) ? SearchAt(x + y * Setting.Length) : default;
 
         private bool IsClamp(int x, int y) 
         {
-            var length = Size.Pow(2) - 1;
-
-            return x.IsClamp(0, length) && y.IsClamp(0, length);
+            return x.IsClamp(0, Setting.Length - 1) && y.IsClamp(0, Setting.Length - 1);
         }
 
         private static IEnumerable<RepositBase<int, int>> CreateReposits(int size) 
@@ -39,17 +39,17 @@ namespace Sudoku
             }
         }
 
-        public void Construct(int size)
+        public void Set()
         {
-            Size = size;
+            var size   = Setting.Size;
+            var length = Setting.Length;
+            var rows   = GetRows(length).OrderBy(r => r.First % size).ToArray();
+            var arrayX = Declarations.EvenlyDistributed(0, size, size);
+            var arrayY = Declarations.EvenlyDistributed(0, size, size);
 
-            var rows   = GetRows(Size.Pow(2)).OrderBy(r => r.First % Size).ToArray();
-            var arrayX = Declarations.EvenlyDistributed(0, Size, Size);
-            var arrayY = Declarations.EvenlyDistributed(0, Size, Size);
-
-            for (int index = 0; index < Size.Pow(4); index++) 
+            for (int index = 0; index < Setting.Capacity; index++) 
             {
-                var offset = GetOffset(index, Size.Pow(2));
+                var offset = GetOffset(index);
                 var x      = arrayX[offset.X];
                 var y      = arrayY[offset.Y];
                 
@@ -57,32 +57,44 @@ namespace Sudoku
             }
         }
 
-        public int Get(Offset2DInt offset) 
-        {
-            var reposit = this[offset.X, offset.Y] ?? new RepositBase<int, int>(0, 0);
-
-            return reposit.Data;
-        }
-
         public IEnumerable<(Offset2DInt offset, int num)> GetRandom(int length)
         {
-            var random = Declarations.RandomList(0, Size.Pow(4), length);
+            var capacity = Setting.Capacity;
+            var random   = Declarations.RandomList(0, capacity, length);
 
-            for (int index = 0; index < Size.Pow(4); index++)
+            for (int index = 0; index < capacity; index++)
             {
                 if (random.Remove(index)) 
                 {
-                    yield return (GetOffset(index, Size.Pow(2)), _Reposits[index].Data);
+                    yield return Get(index);
                 }
             }
         }
 
+        public int Get(Offset2DInt offset) 
+        {
+            var reposit = this[offset.X, offset.Y] ?? new RepositBase<int, int>(0, 0);
+            
+            return reposit.Data;
+        }
+
+        public (Offset2DInt offset, int number) Get(int index) 
+        {
+            var offset = GetOffset(index);
+
+            if (IsClamp(offset.X, offset.Y)) 
+            {
+                return (GetOffset(index), _Reposits[index].Data);
+            }
+
+            return (new(int.MinValue, int.MinValue), int.MinValue);
+        }
+
         public IEnumerable<(Offset2DInt offset, int number)> GetAll()
         {
-            for (int index = 0; index < Size.Pow(4); index++)
+            for (int index = 0; index < Setting.Capacity; index++)
             {
-                //Debug.Log(GetOffset(index, Size.Pow(2)));
-                yield return (GetOffset(index, Size.Pow(2)), _Reposits[index].Data);
+                yield return Get(index);
             }
         }
 
@@ -94,9 +106,9 @@ namespace Sudoku
             }
         }
 
-        private Offset2DInt GetOffset(int num, int length)
+        private Offset2DInt GetOffset(int num)
         {
-            return new(num % length, num / length);
+            return new(num % Setting.Length, num / Setting.Length);
         }
     }
 

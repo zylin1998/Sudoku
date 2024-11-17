@@ -6,41 +6,51 @@ using Loyufei.DomainEvents;
 
 namespace Sudoku
 {
+    #region Setting Event
+
     public struct SudokuSetup : IDomainEvent
     {
-        public SudokuSetup(int size, int display, int tips)
-        {
-            Size    = size;
-            Display = display;
-            Tips    = tips;
-        }
 
-        public int Size    { get; }
-        public int Display { get; }
-        public int Tips    { get; }
     }
 
-    public struct SendMessage : IDomainEvent
+    #endregion
+
+    #region Model Event
+
+    public struct FoundSame : IDomainEvent
     {
-        public SendMessage(string message) : this(message, () => { })
+        public FoundSame(Offset2DInt center, int number)
         {
-
+            Number = number;
+            Center = center;
         }
 
-        public SendMessage(string message, Action onConfirm)
-        {
-            Message   = message;
-            OnConfirm = onConfirm;
-        }
-
-        public string Message { get; }
-        public Action OnConfirm { get; }
+        public int Number { get; }
+        public Offset2DInt Center { get; }
     }
 
-    public struct Setting : IDomainEvent
+    public struct GameOver : IDomainEvent
     {
 
     }
+
+    #endregion
+
+    #region Grid Event
+
+    public struct GetNumber : IDomainEvent
+    {
+        public GetNumber(Offset2DInt offset)
+        {
+            Offset = offset;
+        }
+
+        public Offset2DInt Offset { get; }
+    }
+
+    #endregion
+
+    #region Input Event
 
     public struct SetNumber : IDomainEvent
     {
@@ -54,56 +64,45 @@ namespace Sudoku
         public int         Number { get; }
     }
 
-    public struct GetNumber : IDomainEvent
+    #endregion
+
+    #region Info Event
+
+    public struct Setting : IDomainEvent
     {
-        public GetNumber(Offset2DInt offset)
+
+    }
+
+    public struct DisplayAll : IDomainEvent 
+    {
+
+    }
+
+    public struct FillByOffset : IDomainEvent 
+    {
+        public FillByOffset(IEnumerable<Offset2DInt> offsets) 
         {
-            Offset = offset;
+            Offsets = offsets;
         }
 
-        public Offset2DInt Offset { get; }
+        public IEnumerable<Offset2DInt> Offsets { get; }
     }
 
-    public struct FoundSame : IDomainEvent
+    public struct SendMessage : IDomainEvent
     {
-        public FoundSame(int number, Offset2DInt center)
+        public SendMessage(string message) : this(message, () => { })
         {
-            Number = number;
-            Center = center;
+
         }
 
-        public int         Number { get; }
-        public Offset2DInt Center { get; }
-    }
+        public SendMessage(string message, Action onConfirm)
+        {
+            Message = message;
+            OnConfirm = onConfirm;
+        }
 
-    public struct GameOver : IDomainEvent
-    {
-
-    }
-
-    public struct DisplayNumbers : IDomainEvent
-    {
-
-    }
-
-    public struct AskTip : IDomainEvent
-    {
-
-    }
-
-    public struct ResponseTip : IDomainEvent
-    {
-
-    }
-
-    public struct AskQueryAll : IDomainEvent
-    {
-
-    }
-
-    public struct ResponseQueryAll : IDomainEvent
-    {
-
+        public string Message { get; }
+        public Action OnConfirm { get; }
     }
 
     public struct ReviewNumber : IDomainEvent
@@ -117,4 +116,6 @@ namespace Sudoku
         public bool IsOn   { get; }
         public int  Number { get; }
     }
+
+    #endregion
 }

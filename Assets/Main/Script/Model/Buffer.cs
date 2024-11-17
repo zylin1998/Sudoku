@@ -2,31 +2,64 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using Loyufei;
+using Zenject;
+using UnityEngine;
 
 namespace Sudoku
 {
     public class Buffer
     {
-        private List<(Offset2DInt offset, int number)> _Displays;
+        [Inject]
+        public SudokuMetrix Sudoku { get; }
+        [Inject]
+        public PlayerMetrix Player { get; }
         
-        public void SetDisplay(params (Offset2DInt offset, int number)[] displays)
+        public (Offset2DInt offset, int number) Get(int index) 
         {
-            _Displays = displays.ToList();
+            return Player.Get(index);
         }
 
-        public void SetDisplay(IEnumerable<(Offset2DInt offset, int number)> displays) 
+        public int Get(Offset2DInt offset)
         {
-            _Displays = displays.ToList();
+            return Player[offset.X, offset.Y].Data;
         }
 
-        public IEnumerable<(Offset2DInt offset, int number)> GetDisplay() 
+        public IEnumerable<(Offset2DInt offset, int number)> GetAll(bool isAnswer) 
         {
-            foreach (var display in _Displays) 
+            return isAnswer ? Sudoku.GetAll() : Player.GetAll();
+        }
+
+        public IEnumerable<Offset2DInt> GetEmpty(int length) 
+        {
+            var empties = Player.GetAll().Where(i => i.number <= 0).ToList();
+            var randoms = Declarations.RandomList(0, empties.Count, length);
+
+            foreach (var i in randoms) 
             {
-                yield return display;
+                yield return empties[i].offset;
+            }
+        }
+
+        public bool Verified() 
+        {
+            var result = true;
+            for(var i = 0; i < Player.Setting.Capacity; i++) 
+            {
+                var offset = Player.Get(i).offset;
+                var num1   = Player.Get(i).number;
+                var num2   = Sudoku.Get(i).number;
+
+                if (num1 == 0) { continue; }
+
+                if (num1 != num2) 
+                {
+                    Debug.Log(string.Format("Offset:{0} Sudoku:{1} Player:{2}", offset, num2, num1));
+                    
+                    result = false; 
+                }
             }
 
-            _Displays.Clear();
+            return result;
         }
     }
 }

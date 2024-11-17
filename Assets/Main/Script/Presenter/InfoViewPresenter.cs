@@ -5,12 +5,18 @@ using UnityEngine;
 using Loyufei;
 using Loyufei.MVP;
 using Loyufei.ViewManagement;
+using Zenject;
 
 namespace Sudoku 
 {
     public class InfoViewPresenter : ViewPresenter<InfoView>
     {
         public override object GroupId => Declarations.Sudoku;
+
+        [Inject]
+        public SudokuSetting Setting { get; }
+        [Inject]
+        public Buffer        Buffer  { get; }
 
         private int _Tips = 0;
 
@@ -26,7 +32,7 @@ namespace Sudoku
         {
             var layout = View.Layout();
 
-            layout.BindListener<OptionListener>(0, Setting);
+            layout.BindListener<OptionListener>(0, OpenSetting);
             layout.BindListener<OptionListener>(1, Tips);
             layout.BindListener<OptionListener>(2, ShowAnswer);
             layout.BindListener<OptionListener>(3, Quit);
@@ -34,14 +40,16 @@ namespace Sudoku
             View.SetBinder((listener) => SettleEvents(new ReviewNumber(listener.Id, listener.To<ReviewListener>().Listener.isOn)));
         }
 
-        private void Setting(IListenerAdapter listener) 
+        private void OpenSetting(IListenerAdapter listener) 
         {
             SettleEvents(new Setting());
         }
 
         private void Tips(IListenerAdapter listener) 
         {
-            SettleEvents(new AskTip());
+            var empties = Buffer.GetEmpty(1);
+
+            SettleEvents(new FillByOffset(empties.ToList()));
 
             --_Tips;
 
@@ -52,7 +60,7 @@ namespace Sudoku
 
         private void ShowAnswer(IListenerAdapter listener)
         {
-            SettleEvents(new AskQueryAll());
+            SettleEvents(new DisplayAll());
         }
 
         private void Quit(IListenerAdapter listener)
@@ -64,9 +72,9 @@ namespace Sudoku
         {
             View.RemoveLayout();
 
-            _Tips = setup.Tips;
+            _Tips = Setting.Tips;
 
-            var layout = View.Layout(setup.Size);
+            var layout = View.Layout(Setting.Length);
 
             _TipOption = layout
                 .Find<OptionListener>((option) => option.Id == 1);

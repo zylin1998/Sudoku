@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UniRx;
+using Zenject;
 using Loyufei;
 using Loyufei.ViewManagement;
-using UnityEngine.UI;
-using UnityEngine;
-using Zenject;
-using UniRx;
 
 namespace Sudoku
 {
@@ -24,8 +24,9 @@ namespace Sudoku
         [Inject]
         private AreaPool _AreaPool;
         
-        public List<Area>           Areas   { get; } = new();
-        public List<NumberListener> Numbers { get; } = new();
+        public List<Area>           Areas     { get; } = new();
+        public List<NumberListener> Numbers   { get; } = new();
+        public List<int>            Reviewing { get; } = new();
         
         public NumberListener this[int x, int y]
             => Numbers.Find(n => n.Offset.X == x && n.Offset.Y == y);
@@ -70,7 +71,7 @@ namespace Sudoku
                 var t = area.transform.To<RectTransform>();
 
                 t.SetParent(_Sudoku);
-                t.sizeDelta  = _LayoutGroup.cellSize;
+                t.sizeDelta = _LayoutGroup.cellSize;
                 t.localScale = Vector3.one;
 
                 area.GridSetting(size);
@@ -82,14 +83,14 @@ namespace Sudoku
             Numbers.Sort((n1, n2) => OffsetToInt(n1.Offset, areaCount).CompareTo(OffsetToInt(n2.Offset, areaCount)));
 
             var interval = _DisplayTime / Numbers.Count;
-            var count    = 0;
+            var count = 0;
 
             Observable
                 .Interval(TimeSpan.FromSeconds(interval))
                 .TakeWhile(l => count < Numbers.Count)
                 .Subscribe(
                     (l) => Numbers[count++].gameObject.SetActive(true),
-                    ()  => Numbers.ForEach(n => n.Listener.interactable = true));
+                    () => Numbers.ForEach(n => n.Listener.interactable = n.Context == 0));
         }
 
         public void SetBinder(Action<IListenerAdapter> callBack) 
@@ -97,17 +98,21 @@ namespace Sudoku
             _AreaPool.NumberPool.Binder = callBack;
         }
 
-        public void Display(IEnumerable<(Offset2DInt offset, int number)> displays) 
+        public void Display(IEnumerable<(Offset2DInt offset, int number)> displays, bool interactable = true) 
         {
             displays.ToList().ForEach(display =>
             {
-                Display(display.offset, display.number);
+                Display(display.offset, display.number, interactable);
             });
         }
 
-        public void Display(Offset2DInt offset, int number)
+        public void Display(Offset2DInt offset, int number, bool interactable)
         {
-            this[offset.X, offset.Y]?.Interact(number);
+            var listner = this[offset.X, offset.Y];
+            
+            listner?.Interact(number, interactable);
+
+            if (Reviewing.Contains(number)) { listner?.Review(true); }
         }
 
         public void Warning(int num, Offset2DInt center) 
@@ -116,18 +121,36 @@ namespace Sudoku
                 .FindAll(n => n.Context == num)
                 .ForEach(number => 
                 {
-                    number.Warning(number.Offset == center);
+                    var offset = number.Offset;
+
+                    if (offset.X != center.X && offset.Y != center.Y && !SameArea(center, offset)) { return; }
+
+                    number.Warning(offset == center);
                 });
         }
 
         public void Review(int num, bool isOn) 
         {
+            if (isOn && !Reviewing.Contains(num)) { Reviewing.Add(num); }
+
+            if (!isOn) { Reviewing.Remove(num); }
+
             Numbers
                 .FindAll(n => n.Context == num)
                 .ForEach(number =>
                 {
                     number.Review(isOn);
                 });
+        }
+
+        private bool SameArea(Offset2DInt offset1, Offset2DInt offset2) 
+        {
+            foreach (var area in Areas) 
+            {
+                if (area.Any(n => n.Offset == offset1) && area.Any(n => n.Offset == offset2)) { return true; }
+            }
+
+            return false;
         }
 
         private int OffsetToInt(Offset2DInt offset, int size) 

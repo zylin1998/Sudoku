@@ -20,9 +20,9 @@ namespace Sudoku
 
         public override object ViewId => Declarations.Info;
 
-        public ILayout Layout(int size) 
+        public ILayout Layout(int length) 
         {
-            for (int i = 1; i <= size.Pow(2); i++) 
+            for (int i = 1; i <= length; i++) 
             {
                 var review = _ReviewPool.Spawn(i);
 

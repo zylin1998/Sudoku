@@ -21,6 +21,10 @@ namespace Sudoku
         public override void InstallBindings()
         {
             Container
+                .Bind<SudokuSetting>()
+                .AsSingle();
+
+            Container
                 .Bind<SudokuMetrix>()
                 .AsSingle();
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Loyufei;
+using Zenject;
 
 namespace Sudoku
 {
@@ -10,6 +11,9 @@ namespace Sudoku
         public override object GroupId => Declarations.Sudoku;
 
         private Offset2DInt _Target;
+
+        [Inject]
+        public SudokuSetting Setting { get; }
 
         protected override void RegisterEvents()
         {
@@ -31,7 +35,7 @@ namespace Sudoku
         {
             View.RemoveLayout();
 
-            var layout = View.Layout(setup.Size);
+            var layout = View.Layout(Setting.Size);
         }
 
         private void GetNumber(GetNumber get) 

@@ -27,6 +27,8 @@ namespace Sudoku
         public ColorEffect     ColorEffect  => _ColorEffect;
         public TextMeshProUGUI InteractText => _InteractText;
 
+        public IObservable<long> Current { get; private set; }
+
         private void Awake()
         {
             _InteractText.enabled = false;
@@ -38,11 +40,20 @@ namespace Sudoku
         {
             Context = context; 
         }
+
+        public void SetObservable(IObservable<long> stopable) 
+        {
+            Current.To<StopableObservable>()?.Stop();
+            
+            Current = stopable;
+
+            Current.To<StopableObservable>()?.Start();
+        }
     }
 
     public static class NumberListenerExtensions 
     {
-        public static void Interact(this NumberListener self, int value)
+        public static void Interact(this NumberListener self, int value, bool interactable)
         {
             self.SetContext(value);
 
@@ -51,16 +62,8 @@ namespace Sudoku
             self.InteractText.enabled = isZero ? false : true;
 
             self.InteractText.SetText(self.Context.ToString());
-        }
 
-        public static void Display(this NumberListener self, int value)
-        {
-            if (self.Context != value)
-            {
-                self.Interact(value);
-            }
-
-            self.Listener.interactable = false;
+            self.Listener.interactable = interactable;
         }
 
         public static void Clear(this NumberListener self)
@@ -74,32 +77,71 @@ namespace Sudoku
 
         public static void Warning(this NumberListener self, bool clear = false)
         {
-            var image   = self.Listener.image;
-            var normal  = self.ColorEffect.Normal;
-            var warning = self.ColorEffect.Warning;
+            var interactable = self.Listener.interactable;
+            var image        = self.Listener.image;
+            var current      = image.color;
+            var warning      = self.ColorEffect.Warning;
 
             self.Listener.interactable = false;
 
-            image
-                .ChangeColor(warning, 0.2f)
-                .Subscribe((l) => image.ChangeColor(normal , 0.2f)
-                .Subscribe((l) => image.ChangeColor(warning, 0.2f)
-                .Subscribe((l) => image.ChangeColor(normal , 0.2f)
-                .Subscribe(l => { if (clear) self.Clear(); }))));
+            var loop = 0;
+            var passtime = 0f;
+
+            var stopable = new StopableObservable()
+                .StopWhen(() =>
+                {
+                    var color = loop % 2 == 0 ? warning : current;
+
+                    if (image.ChangeColor(color, 0.2f, ref passtime)) 
+                    {
+                        passtime = 0f;
+
+                        loop++;
+                    }
+
+                    return loop >= 4;
+                });
+
+            stopable
+                .Subscribe((l) => { }, () =>
+                {
+                    if (clear)
+                    {
+                        self.Clear();
+                        
+                        if (current == self.ColorEffect.Review) { self.Review(false); }
+                    }
+
+                    else self.Listener.interactable = interactable;
+                });
+
+            self.SetObservable(stopable);
         }
 
         public static void Review(this NumberListener self, bool isOn)
         {
-            var image    = self.Listener.image;
-            var effect   = self.ColorEffect;
-            var color    = isOn ? effect.Review : effect.Normal;
-            var listener = self.Listener;
+            var interactable = self.Listener.interactable;
+            var image        = self.Listener.image;
+            var effect       = self.ColorEffect;
+            var targetColor  = isOn ? effect.Review : effect.Normal;
+            var listener     = self.Listener;
             
             listener.interactable = false;
+            
+            var passtime = 0f;
 
-            image
-                .ChangeColor(color, 0.2f)
-                .Subscribe(l => listener.interactable = true);
+            var stopable = new StopableObservable()
+                .StopWhen(() => image.ChangeColor(targetColor, 0.2f, ref passtime));
+
+            stopable
+                .Subscribe((l) => { }, () =>
+                {
+                    image.color = targetColor;
+
+                    listener.interactable = interactable;
+                });
+            
+            self.SetObservable(stopable);
         }
     }
 
@@ -140,17 +182,54 @@ namespace Sudoku
 
     public static class ImageExtension 
     {
-        public static IObservable<long> ChangeColor(this Image self, Color color, float duration) 
+        public static bool ChangeColor(this Image self, Color color, float duration, ref float passTime) 
         {
-            var changing = Observable
+            if (self.color == color) { return true; }
+            
+            passTime =  passTime += Time.deltaTime * (1 / duration);
+
+            self.color = Color.Lerp(self.color, color, passTime);
+            
+            return self.color == color;
+        }
+    }
+
+    public class StopableObservable : IObservable<long>
+    {
+        private IObservable<long> source;
+
+        public Subject<long> Subject { get; } = new();
+
+        public bool Stopped { get; set; } = false;
+
+        public Func<bool> ShouldStop { get; set; } = () => false;
+
+        public IObservable<long> Start()
+        {
+            source = Observable
                 .EveryUpdate()
-                .TakeWhile(l => self.color != color);
+                .TakeWhile((l) => !ShouldStop.Invoke() && !Stopped);
 
-            var passTime = 0f;
+            source.Subscribe(Subject.OnNext, Subject.OnError, Subject.OnCompleted);
+            
+            return this;
+        }
 
-            changing.Subscribe(l => self.color = Color.Lerp(self.color, color, (passTime += Time.deltaTime) * (1 / duration)));
+        public void Stop() 
+        {
+            Stopped = true;
+        }
 
-            return changing.Last();
+        public IObservable<long> StopWhen(Func<bool> predicate) 
+        {
+            ShouldStop = predicate;
+
+            return this;
+        }
+
+        public IDisposable Subscribe(IObserver<long> observer)
+        {
+            return Subject?.Subscribe(observer);
         }
     }
 }

@@ -5,88 +5,63 @@ using System.Collections.Generic;
 using Loyufei;
 using Loyufei.MVP;
 using Loyufei.ViewManagement;
+using UnityEngine;
 
 namespace Sudoku
 {
     public class SetupViewPresenter : ViewPresenter<SetupView>
     {
+        public SetupViewPresenter(SudokuSetting setting) 
+        {
+            Setting = setting;
+        }
+
         public override object GroupId => Declarations.Sudoku;
 
-        private int _Size;
-        private int _Display;
-        private int _Tips;
-
-        private int MinDisplay => _Size.Pow(4) / 10;
-        private int MaxDisplay => (int)(_Size.Pow(4) * 0.4f);
-
-        private DropdownListener _SizeDrop;
-        private DropdownListener _DisplayDrop;
+        public SudokuSetting Setting { get; private set; }
 
         protected override void RegisterEvents()
         {
-            Register<Setting>   (Setting);
+            Register<Setting>(Open);
         }
 
         protected override void Init() 
         {
             var layout = View.Layout();
 
-            var dropdowns = layout
-                .FindAll<DropdownListener>()
-                .ToDictionary(k => k.Id);
+            View.SetSizeOptions(Declarations.Sizes);
+            View.SetDisplayOptions(Enumerable.Range(Setting.MinDisplay, Setting.MaxDisplay - Setting.MinDisplay + 1));
 
-            _SizeDrop    = dropdowns[0];
-            _DisplayDrop = dropdowns[1];
+            layout.BindListener<DropdownListener>(0, OnSizeChanged);
+            layout.BindListener<DropdownListener>(1, OnDisplayChanged);
             
-            _Size    = Declarations.Sizes[0];
-            _Display = MinDisplay;
-            _Tips    = _Size;
-
-            _SizeDrop   .Listener.options.Clear();
-            _DisplayDrop.Listener.options.Clear();
-            _SizeDrop   .Listener.AddOptions(Declarations.Sizes.Select(s => string.Format("{0} x {0}", s)).ToList());
-            _DisplayDrop.Listener.AddOptions(Create(MinDisplay, MaxDisplay).ToList());
-
-            _SizeDrop   .AddListener(OnSizeChanged);
-            _DisplayDrop.AddListener(UpdateDisplay);
-
             layout.BindListener<ButtonListener>(0, Setup);
         }
 
-        private void Setting(Setting setting) 
+        private void Open(Setting setting) 
         {
             View.Open();
         }
 
         private void OnSizeChanged(IListenerAdapter listener) 
         {
-            _Size    = Declarations.Sizes[_SizeDrop.Value];
-            _Tips    = _Size;
-            _Display = MinDisplay;
+            var size = Declarations.Sizes[listener.To<DropdownListener>().Value];
+
+            Setting.Size = size;
             
-            _DisplayDrop.Listener.options.Clear();
-            _DisplayDrop.Listener.AddOptions(Create(MinDisplay, MaxDisplay).ToList());
-            _DisplayDrop.Listener.SetValueWithoutNotify(0);
+            View.SetDisplayOptions(Enumerable.Range(Setting.MinDisplay, Setting.MaxDisplay - Setting.MinDisplay + 1));
         }
 
         private void Setup(IListenerAdapter listener) 
         {
-            SettleEvents(new SudokuSetup(_Size, _Display, _Tips));
+            SettleEvents(new SudokuSetup());
             
             View.Close();
         }
 
-        private void UpdateDisplay(IListenerAdapter adapter) 
+        private void OnDisplayChanged(IListenerAdapter listener) 
         {
-            _Display = MinDisplay + _DisplayDrop.Value;
-        }
-
-        private IEnumerable<string> Create(int start, int end) 
-        {
-            for(int num = start; num <= end; num++) 
-            {
-                yield return num.ToString();
-            }
+            Setting.Display = Setting.MinDisplay + listener.To<DropdownListener>().Value;
         }
     }
 }

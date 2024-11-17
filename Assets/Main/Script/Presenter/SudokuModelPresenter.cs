@@ -18,26 +18,21 @@ namespace Sudoku
 
         protected override void RegisterEvents()
         {
-            Register<SudokuSetup>(Start);            
-            Register<AskTip>     (Tip);            
-            Register<SetNumber>  (Set);            
-            Register<AskQueryAll>(Query);           
+            Register<SudokuSetup> (Start, true);            
+            Register<FillByOffset>(Fill , true);            
+            Register<SetNumber>   (Set);
         }
 
         private void Start(SudokuSetup setup) 
         {
-            Model.Start(setup.Size);
+            Model.Start();
 
-            Model.GetRandom(setup.Display);
-
-            SettleEvents(new DisplayNumbers());
+            Model.FillRandoms();
         }
 
-        private void Tip(AskTip ask) 
+        private void Fill(FillByOffset fill) 
         {
-            Model.GetRandom();
-            
-            SettleEvents(new ResponseTip());
+            Model.FillRandoms(fill.Offsets);
         }
 
         private void Set(SetNumber number) 
@@ -48,20 +43,13 @@ namespace Sudoku
             {
                 Model.Clear(number.Offset);
 
-                SettleEvents(new FoundSame(number.Number, number.Offset));
+                SettleEvents(new FoundSame(number.Offset, number.Number));
             }
 
             if (Model.GameOver()) 
             {
                 SettleEvents(new GameOver());
             }
-        }
-
-        private void Query(AskQueryAll query)
-        {
-            Model.QueryAll();
-
-            SettleEvents(new ResponseQueryAll(), new GameOver());
         }
     }
 }

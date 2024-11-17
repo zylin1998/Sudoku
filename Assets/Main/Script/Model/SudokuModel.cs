@@ -9,43 +9,38 @@ namespace Sudoku
     public class SudokuModel
     {
         [Inject]
-        public SudokuMetrix Metrix { get; }
+        public SudokuMetrix  Metrix { get; }
         [Inject]
-        public PlayerMetrix Player { get; }
+        public PlayerMetrix  Player { get; }
         [Inject]
-        public Buffer       Buffer { get; }
+        public SudokuSetting Setting { get; }
 
-        public void Start(int size) 
+        public void Start() 
         {
-            Metrix.Construct(size);
-
-            Player.Set(size);
+            Metrix.Set();
+            Player.Set();
         }
 
-        public void GetRandom(int length) 
+        public void FillRandoms() 
         {
-            var randoms = Metrix.GetRandom(length).ToList();
+            var randoms = Metrix.GetRandom(Setting.Display).ToList();
 
             randoms.ForEach(r => Player.Set(r.offset, r.num));
-            
-            Buffer.SetDisplay(randoms);
         }
 
-        public void GetRandom()
+        public void FillRandoms(IEnumerable<Offset2DInt> offsets)
         {
-            var offset = Player.GetRandom();
-            var number = Metrix.Get(offset);
-            
-            Player.Set(offset, number);
-
-            Buffer.SetDisplay((offset, number));
+            foreach (var offset in offsets) 
+            {
+                Player.Set(offset, Metrix.Get(offset));
+            }
         }
 
         public int SetNumber(Offset2DInt offset, int number) 
         {
             Player.Set(offset, number);
 
-            return Player.CheckArea(offset).Concat(Player.CheckHorizontal(offset)).Concat(Player.CheckVertical(offset)).Count();
+            return Player.CheckSame(offset).Count();
         }
 
         public void Clear(Offset2DInt offset)
@@ -55,20 +50,12 @@ namespace Sudoku
 
         public bool GameOver() 
         {
-            var (x, y) = (0, 0);
-            for (int index = 0; index < Metrix.Size.Pow(2); index++)
+            for (int index = 0; index < Setting.Capacity; index++)
             {
-                if (Metrix[x, y].Data != Player[x, y].Data) { return false; }
-
-                (x, y) = x < Metrix.Size.Pow(2) - 1 ? (++x, y) : (0, ++y);
+                if (Metrix.Get(index).number != Player.Get(index).number) { return false; }
             }
 
             return true;
-        }
-
-        public void QueryAll()
-        {
-            Buffer.SetDisplay(Metrix.GetAll());
         }
     }
 }
