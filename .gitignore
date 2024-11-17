@@ -67,3 +67,11 @@ user.keystore
 UserSettings/
 
 Assets/Plugins/Loyufei/
+
+Packages/
+
+Assets/Plugins/Zenject/
+
+Assets/Plugins/UniRx/
+
+ProjectSettings/
